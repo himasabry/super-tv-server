@@ -6,7 +6,7 @@ const STREAMS = {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const path = url.pathname.replace(/^\\//, '').replace(/\\.m3u8$/, '');
+    const path = url.pathname.replace(/^\//, '').replace(/\.m3u8$/, '');
     const upstream = STREAMS[path];
     
     if (!upstream) {
@@ -23,12 +23,12 @@ export default {
     let body = await res.text();
     
     if (body.includes('https://')) {
-      body = body.split('\\n').map(line => {
+      body = body.split('\n').map(line => {
         if (line.startsWith('https://')) {
           return '/proxy?url=' + encodeURIComponent(line);
         }
         return line;
-      }).join('\\n');
+      }).join('\n');
     }
 
     return new Response(body, {
