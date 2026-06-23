@@ -1,6 +1,6 @@
 const STREAMS = {
-  "SUPER_TV_1": "https://restream-app.hima-sabry2015.workers.dev/live/14855632920086.m3u8",
-  "SUPER_TV_2": "https://restream-app.hima-sabry2015.workers.dev/live/14863707479574.m3u8"
+  "SUPER_TV_1": "https://restream-app.super-stv.workers.dev/live/14855632920086.m3u8",
+  "SUPER_TV_2": "https://restream-app.super-stv.workers.dev/live/14863707479574.m3u8"
 };
 
 export default {
