@@ -1,22 +1,44 @@
 const STREAMS = {
-  "SUPER_TV_1": "https://restream-app.super-stv.workers.dev/live/14855632920086.m3u8",
-  "SUPER_TV_2": "https://restream-app.super-stv.workers.dev/live/14863707479574.m3u8"
+  // قنوات عادية (رابط مباشر)
+  "SUPER_TV_1": "https://restream-app.hima-sabry2015.workers.dev/live/14855632920086.m3u8",
+  "SUPER_TV_2": "https://restream-app.hima-sabry2015.workers.dev/live/14863707479574.m3u8",
+  
+  // قنوات بتحتاج User-Agent مخصص
+  "ALWAN_1": {
+    url: "https://player.kianezidi.workers.dev/play.m3u8?id=156588&cat=7193",
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
+  },
+  "SSC_1": {
+    url: "https://example.com/ssc1.m3u8",
+    userAgent: "VLC/3.0.18 LibVLC/3.0.18",
+    referer: "https://example.com/"  // ممكن تضيف Referer كمان لو محتاج
+  }
 };
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\//, '').replace(/\.m3u8$/, '');
-    const upstream = STREAMS[path];
     
-    if (!upstream) {
+    const streamConfig = STREAMS[path];
+    if (!streamConfig) {
       return new Response('Not Found', { status: 404 });
+    }
+
+    // لو الرابط string مباشر، ولو object نفككه
+    let upstream, customUA, customReferer;
+    if (typeof streamConfig === 'string') {
+      upstream = streamConfig;
+    } else {
+      upstream = streamConfig.url;
+      customUA = streamConfig.userAgent;
+      customReferer = streamConfig.referer;
     }
 
     const res = await fetch(upstream, {
       headers: {
-        'Referer': 'https://live.kwikmotion.com/',
-        'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0'
+        'Referer': customReferer || 'https://live.kwikmotion.com/',
+        'User-Agent': customUA || request.headers.get('User-Agent') || 'Mozilla/5.0'
       }
     });
 
