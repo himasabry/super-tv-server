@@ -2,9 +2,10 @@ const STREAMS = {
   // قنوات عادية (رابط مباشر)
   "SUPER_TV_1": "https://restream-app.hima-sabry2015.workers.dev/live/14855632920086.m3u8",
   "SUPER_TV_2": "https://restream-app.hima-sabry2015.workers.dev/live/14863707479574.m3u8",
+  "ALWAN_1": "https://super-tv.pages.dev/ALWAN1.m3u8",
   
   // قنوات بتحتاج User-Agent مخصص
-  "ALWAN_1": {
+  "ALWAN_2": {
     url: "https://player.kianezidi.workers.dev/play.m3u8?id=156588&cat=7193",
     userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
   },
