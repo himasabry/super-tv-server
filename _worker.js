@@ -1,87 +1,42 @@
 const STREAMS = {
-  "SUPER_TV_1": "https://restream-app.hima-sabry2015.workers.dev/live/14855632920086.m3u8",
-  "SUPER_TV_2": "https://restream-app.hima-sabry2015.workers.dev/live/14863707479574.m3u8",
-  "ALWAN_1": "https://super-tv.pages.dev/ALWAN1.m3u8",
+  "SUPER_TV_1": {
+    url: "https://restream-app.hima-sabry2015.workers.dev/live/14855632920086.m3u8"
+  },
+
+  "SUPER_TV_2": {
+    url: "https://restream-app.hima-sabry2015.workers.dev/live/14863707479574.m3u8"
+  },
+
+  "ALWAN_1": {
+    url: "https://super-tv.pages.dev/ALWAN1.m3u8"
+  },
 
   "ALWAN_2": {
     url: "https://player.kianezidi.workers.dev/play.m3u8?id=156588&cat=7193",
     userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
-  },
-
-  "SSC_1": {
-    url: "https://example.com/ssc1.m3u8",
-    userAgent: "VLC/3.0.18 LibVLC/3.0.18",
-    referer: "https://example.com/"
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    referer:
+      ""
   }
 };
 
-export default {
-async fetch(request) {
-
-const reqUrl = new URL(request.url);
-
-// ===== Proxy للـ segments =====
-if (reqUrl.pathname === "/proxy") {
-
-const target = reqUrl.searchParams.get("url");
-
-if (!target) {
-return new Response("Missing url",{status:400});
-}
-
-const res = await fetch(target, {
-headers:{
-"User-Agent":
-request.headers.get("User-Agent") ||
-"Mozilla/5.0"
-}
-});
-
-return new Response(res.body,{
-status:res.status,
-headers:{
-"Content-Type":
-res.headers.get("content-type") ||
-"video/mp2t",
-
+function cors(headers = {}) {
+return {
+...headers,
 "Access-Control-Allow-Origin":"*",
-
+"Access-Control-Allow-Methods":"GET,OPTIONS",
+"Access-Control-Allow-Headers":"*",
 "Cache-Control":"no-cache"
-}
-});
-
+};
 }
 
-// ===== القنوات =====
-const key =
-reqUrl.pathname
-.replace(/^\//,"")
-.replace(/\.m3u8$/,"");
+async function fetchProxy(url, ua, referer) {
 
-const cfg = STREAMS[key];
-
-if(!cfg){
-return new Response("Not Found",{status:404});
-}
-
-let upstream;
-let ua;
-let referer;
-
-if(typeof cfg==="string"){
-upstream=cfg;
-}else{
-upstream=cfg.url;
-ua=cfg.userAgent;
-referer=cfg.referer;
-}
-
-const res=await fetch(upstream,{
+return fetch(url,{
+redirect:"follow",
 headers:{
 "User-Agent":
 ua ||
-request.headers.get("User-Agent") ||
 "Mozilla/5.0",
 
 "Referer":
@@ -90,62 +45,216 @@ referer ||
 }
 });
 
-if(!res.ok){
-return new Response("Upstream Error",{
-status:res.status
+}
+
+export default {
+
+async fetch(request) {
+
+if(request.method==="OPTIONS"){
+return new Response("",{
+headers:cors()
 });
 }
 
-const type=
-res.headers.get("content-type") || "";
+const reqUrl =
+new URL(request.url);
 
-if(
-type.includes("mpegurl") ||
-upstream.endsWith(".m3u8")
-){
+// =================
+// SEGMENTS PROXY
+// =================
 
-let body=await res.text();
+if(reqUrl.pathname==="/proxy"){
 
-body=body
-.split("\n")
-.map(line=>{
+const target =
+reqUrl.searchParams.get("url");
 
-if(
-line.startsWith("http://") ||
-line.startsWith("https://")
-){
+const ua =
+reqUrl.searchParams.get("ua");
 
-return `${reqUrl.origin}/proxy?url=${encodeURIComponent(line)}`;
+const referer =
+reqUrl.searchParams.get("ref");
+
+if(!target){
+
+return new Response(
+"Missing url",
+{
+status:400
+}
+);
 
 }
 
+try{
+
+const res =
+await fetchProxy(
+target,
+ua,
+referer
+);
+
+return new Response(
+res.body,
+{
+status:
+res.status,
+
+headers:
+cors({
+"Content-Type":
+res.headers.get(
+"content-type"
+) ||
+"video/mp2t"
+})
+}
+);
+
+}catch(e){
+
+return new Response(
+"Proxy Error",
+{
+status:500
+}
+);
+
+}
+
+}
+
+// =================
+// PLAYLIST
+// =================
+
+const id =
+reqUrl.pathname
+.replace("/","")
+.replace(".m3u8","");
+
+const cfg =
+STREAMS[id];
+
+if(!cfg){
+
+return new Response(
+"Channel Not Found",
+{
+status:404
+}
+);
+
+}
+
+try{
+
+const upstream =
+cfg.url;
+
+const res =
+await fetchProxy(
+upstream,
+cfg.userAgent,
+cfg.referer
+);
+
+if(!res.ok){
+
+return new Response(
+"Upstream Error",
+{
+status:
+res.status
+}
+);
+
+}
+
+let body =
+await res.text();
+
+const base =
+new URL(
+upstream
+);
+
+body =
+body
+.split("\n")
+.map(line=>{
+
+line =
+line.trim();
+
+if(
+!line ||
+line.startsWith("#")
+){
+
 return line;
+
+}
+
+try{
+
+const abs =
+new URL(
+line,
+base
+).href;
+
+return (
+reqUrl.origin +
+"/proxy?url=" +
+encodeURIComponent(
+abs
+) +
+"&ua=" +
+encodeURIComponent(
+cfg.userAgent ||
+""
+) +
+"&ref=" +
+encodeURIComponent(
+cfg.referer ||
+upstream
+)
+);
+
+}catch{
+
+return line;
+
+}
 
 })
 .join("\n");
 
-return new Response(body,{
-headers:{
+return new Response(
+body,
+{
+headers:
+cors({
 "Content-Type":
-"application/vnd.apple.mpegurl",
-
-"Access-Control-Allow-Origin":"*",
-
-"Cache-Control":"no-cache"
+"application/vnd.apple.mpegurl"
+})
 }
-});
+);
 
+}catch(e){
+
+return new Response(
+"Worker Error\n\n"+
+e.message,
+{
+status:500
 }
-
-// ملفات الفيديو مباشرة
-return new Response(res.body,{
-headers:{
-"Content-Type":
-type,
-
-"Access-Control-Allow-Origin":"*"
-}
-});
+);
 
 }
+
+}
+
 };
