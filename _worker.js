@@ -1,5 +1,5 @@
 const STREAMS = {
-  "SUPER_TV_1": "https://restream-app.super-stv.workers.dev/live/14855632920086.m3u8",
+  "SUPER_TV_1": "https://restream-app.super-stv.workers.dev/live/15459447873244.m3u8",
   "SUPER_TV_2": "https://restream-app.super-stv.workers.dev/live/15458583715548.m3u8"
 };
 
